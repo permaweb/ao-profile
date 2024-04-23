@@ -4,14 +4,14 @@ local sqlite3 = require('lsqlite3')
 
 Db = Db or sqlite3.open_memory()
 
-local function decodeMessageData(data)
-	local status, decodedData = pcall(json.decode, data)
+local function decode_message_data(data)
+	local status, decoded_data = pcall(json.decode, data)
 
-	if not status or type(decodedData) ~= 'table' then
+	if not status or type(decoded_data) ~= 'table' then
 		return false, nil
 	end
 
-	return true, decodedData
+	return true, decoded_data
 end
 
 Handlers.add('Prepare-Database', Handlers.utils.hasMatchingTag('Action', 'Prepare-Database'),
@@ -32,35 +32,22 @@ Handlers.add('Prepare-Database', Handlers.utils.hasMatchingTag('Action', 'Prepar
                 FOREIGN KEY (wallet_address) REFERENCES ao_profile_metadata (id) ON DELETE CASCADE
             );
         ]]
-
-		-- Db.exec [[
-		-- 	CREATE TRIGGER IF NOT EXISTS trg_check_authorization_before_update
-		-- 	BEFORE UPDATE ON ao_profile_metadata
-		-- 	FOR EACH ROW
-		-- 	BEGIN
-		-- 		SELECT RAISE(ABORT, 'Unauthorized to modify this profile')
-		-- 		WHERE NOT EXISTS (
-		-- 			SELECT 1 FROM ao_profile_authorization
-		-- 			WHERE profile_id = OLD.id AND wallet_address = CURRENT_USER_ID()
-		-- 		);
-		-- 	END;
-		-- ]]
 	end)
 
--- Data - { Username }
+-- Data - { ProfileId, AuthorizedAddress, Username }
 Handlers.add('Update-Profile', Handlers.utils.hasMatchingTag('Action', 'Update-Profile'),
 	function(msg)
-		local decodeCheck, data = decodeMessageData(msg.Data)
+		local decode_check, data = decode_message_data(msg.Data)
 
-		if decodeCheck and data then
-			if not data.Username then
+		if decode_check and data then
+			if not data.ProfileId or not data.AuthorizedAddress or not data.Username then
 				ao.send({
 					Target = msg.From,
 					Action = 'Input-Error',
 					Tags = {
 						Status = 'Error',
 						Message =
-						'Invalid arguments, required { Username }'
+						'Invalid arguments, required { ProfileId, AuthorizedAddress, Username }'
 					}
 				})
 				return
@@ -68,6 +55,7 @@ Handlers.add('Update-Profile', Handlers.utils.hasMatchingTag('Action', 'Update-P
 
 			local stmt = Db:prepare('SELECT 1 FROM ao_profile_authorization WHERE wallet_address = ? LIMIT 1')
 			stmt:bind_values(msg.From)
+
 			if stmt:step() == sqlite3.ROW then
 				ao.send({
 					Target = msg.From,
@@ -79,20 +67,20 @@ Handlers.add('Update-Profile', Handlers.utils.hasMatchingTag('Action', 'Update-P
 				})
 			else
 				local insert_meta = Db:prepare('INSERT INTO ao_profile_metadata (id, username) VALUES (?, ?)')
-				insert_meta:bind_values(msg.Id, data.Username)
+				insert_meta:bind_values(data.ProfileId, data.Username)
 				insert_meta:step()
 
 				local insert_auth = Db:prepare(
 					'INSERT INTO ao_profile_authorization (profile_id, wallet_address) VALUES (?, ?)')
-				insert_auth:bind_values(msg.Id, msg.From)
+				insert_auth:bind_values(data.ProfileId, data.AuthorizedAddress)
 				insert_auth:step()
 
 				ao.send({
-					Target = msg.From,
+					Target = data.AuthorizedAddress,
 					Action = 'Profile-Success',
 					Tags = {
 						Status = 'Success',
-						Message = 'Profile added'
+						Message = 'Profile added to registry'
 					}
 				})
 			end
@@ -105,7 +93,7 @@ Handlers.add('Update-Profile', Handlers.utils.hasMatchingTag('Action', 'Update-P
 					Status = 'Error',
 					Message = string.format(
 						'Failed to parse data, received: %s. %s.', msg.Data,
-						'Data must be an object - { Username }')
+						'Data must be an object - { ProfileId, AuthorizedAddress, Username }')
 				}
 			})
 		end
@@ -113,22 +101,28 @@ Handlers.add('Update-Profile', Handlers.utils.hasMatchingTag('Action', 'Update-P
 
 Handlers.add('Read-Metadata', Handlers.utils.hasMatchingTag('Action', 'Read-Metadata'),
 	function(msg)
+		local rowIndex = 0
+
+		print('\n')
 		for row in Db:nrows('SELECT * FROM ao_profile_metadata') do
-			print('Profile Id')
-			print(row.id)
-			print('Username')
-			print(row.username)
+			rowIndex = rowIndex + 1
+			print('Row - ' .. rowIndex)
+			print('Profile Id - ' .. row.id)
+			print('Username - ' .. row.username)
 			print('\n')
 		end
 	end)
 
 Handlers.add('Read-Authorization', Handlers.utils.hasMatchingTag('Action', 'Read-Authorization'),
 	function(msg)
+		local rowIndex = 0
+
+		print('\n')
 		for row in Db:nrows('SELECT * FROM ao_profile_authorization') do
-			print('Profile Id')
-			print(row.profile_id)
-			print('Wallet Address')
-			print(row.wallet_address)
+			rowIndex = rowIndex + 1
+			print('Row - ' .. rowIndex)
+			print('Profile Id - ' .. row.profile_id)
+			print('Wallet Address - ' .. row.wallet_address)
 			print('\n')
 		end
 	end)
