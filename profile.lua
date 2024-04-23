@@ -1,7 +1,11 @@
 local json = require('json')
 
 -- Profile {
+--   DisplayName
 --   Username
+--   Bio
+--   Avatar
+--   Banner
 -- }
 
 if not Profile then Profile = {} end
@@ -59,7 +63,11 @@ Handlers.add('Update-Profile', Handlers.utils.hasMatchingTag('Action', 'Update-P
 				return
 			end
 
-			Profile.username = data.Username
+			Profile.DisplayName = data.DisplayName or ''
+			Profile.Username = data.Username or ''
+			Profile.Bio = data.Bio or ''
+			Profile.Avatar = data.Avatar or ''
+			Profile.Banner = data.Banner or ''
 
 			ao.send({
 				Target = REGISTRY,

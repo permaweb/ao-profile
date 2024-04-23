@@ -34,7 +34,79 @@ Handlers.add('Prepare-Database', Handlers.utils.hasMatchingTag('Action', 'Prepar
         ]]
 	end)
 
--- Data - { ProfileId, AuthorizedAddress, Username }
+
+-- Data - { Address }
+Handlers.add('Get-Profiles-By-Address', Handlers.utils.hasMatchingTag('Action', 'Get-Profiles-By-Address'),
+	function(msg)
+		local decode_check, data = decode_message_data(msg.Data)
+
+		if decode_check and data then
+			if not data.Address then
+				ao.send({
+					Target = msg.From,
+					Action = 'Input-Error',
+					Tags = {
+						Status = 'Error',
+						Message =
+						'Invalid arguments, required { Address }'
+					}
+				})
+				return
+			end
+
+			local associated_profiles = {}
+
+			local authorization_lookup = Db:prepare([[
+				SELECT profile_id, wallet_address
+					FROM ao_profile_authorization
+					WHERE wallet_address = ?
+			]])
+
+			authorization_lookup:bind_values(data.Address)
+
+			for row in authorization_lookup:nrows() do
+				table.insert(associated_profiles, {
+					ProfileId = row.profile_id,
+					WalletAddress = row.wallet_address
+				})
+			end
+
+			authorization_lookup:finalize()
+
+			if #associated_profiles > 0 then
+				ao.send({
+					Target = msg.From,
+					Action = 'Profile-Success',
+					Tags = {
+						Status = 'Success',
+						Message = 'Associated profiles fetched'
+					},
+					Data = json.encode(associated_profiles)
+				})
+			else
+				ao.send({
+					Target = msg.From,
+					Action = 'Profile-Error',
+					Tags = {
+						Status = 'Error',
+						Message = 'This wallet address is not associated with a profile'
+					}
+				})
+			end
+		else
+			ao.send({
+				Target = msg.From,
+				Action = 'Input-Error',
+				Tags = {
+					Status = 'Error',
+					Message = string.format(
+						'Failed to parse data, received: %s. %s.', msg.Data,
+						'Data must be an object - { Address }')
+				}
+			})
+		end
+	end)
+
 Handlers.add('Update-Profile', Handlers.utils.hasMatchingTag('Action', 'Update-Profile'),
 	function(msg)
 		local decode_check, data = decode_message_data(msg.Data)
@@ -46,45 +118,30 @@ Handlers.add('Update-Profile', Handlers.utils.hasMatchingTag('Action', 'Update-P
 					Action = 'Input-Error',
 					Tags = {
 						Status = 'Error',
-						Message =
-						'Invalid arguments, required { ProfileId, AuthorizedAddress, Username }'
+						Message = 'Invalid arguments, required { ProfileId, AuthorizedAddress, Username }'
 					}
 				})
 				return
 			end
 
-			local stmt = Db:prepare('SELECT 1 FROM ao_profile_authorization WHERE wallet_address = ? LIMIT 1')
-			stmt:bind_values(msg.From)
+			local insert_or_update_meta = Db:prepare([[
+                INSERT INTO ao_profile_metadata (id, username)
+                	VALUES (?, ?)
+                	ON CONFLICT(id) DO UPDATE SET username = excluded.username;
+            ]])
 
-			if stmt:step() == sqlite3.ROW then
-				ao.send({
-					Target = msg.From,
-					Action = 'Profile-Error',
-					Tags = {
-						Status = 'Error',
-						Message = 'This user already has a profile'
-					}
-				})
-			else
-				local insert_meta = Db:prepare('INSERT INTO ao_profile_metadata (id, username) VALUES (?, ?)')
-				insert_meta:bind_values(data.ProfileId, data.Username)
-				insert_meta:step()
+			insert_or_update_meta:bind_values(data.ProfileId, data.Username)
+			insert_or_update_meta:step()
+			insert_or_update_meta:finalize()
 
-				local insert_auth = Db:prepare(
-					'INSERT INTO ao_profile_authorization (profile_id, wallet_address) VALUES (?, ?)')
-				insert_auth:bind_values(data.ProfileId, data.AuthorizedAddress)
-				insert_auth:step()
-
-				ao.send({
-					Target = data.AuthorizedAddress,
-					Action = 'Profile-Success',
-					Tags = {
-						Status = 'Success',
-						Message = 'Profile added to registry'
-					}
-				})
-			end
-			stmt:finalize()
+			ao.send({
+				Target = data.AuthorizedAddress,
+				Action = 'Profile-Success',
+				Tags = {
+					Status = 'Success',
+					Message = 'Profile successfully updated in the registry'
+				}
+			})
 		else
 			ao.send({
 				Target = msg.From,
@@ -98,6 +155,72 @@ Handlers.add('Update-Profile', Handlers.utils.hasMatchingTag('Action', 'Update-P
 			})
 		end
 	end)
+
+
+-- -- Data - { ProfileId, AuthorizedAddress, Username }
+-- Handlers.add('Update-Profile', Handlers.utils.hasMatchingTag('Action', 'Update-Profile'),
+-- 	function(msg)
+-- 		local decode_check, data = decode_message_data(msg.Data)
+
+-- 		if decode_check and data then
+-- 			if not data.ProfileId or not data.AuthorizedAddress or not data.Username then
+-- 				ao.send({
+-- 					Target = msg.From,
+-- 					Action = 'Input-Error',
+-- 					Tags = {
+-- 						Status = 'Error',
+-- 						Message =
+-- 						'Invalid arguments, required { ProfileId, AuthorizedAddress, Username }'
+-- 					}
+-- 				})
+-- 				return
+-- 			end
+
+-- 			local check = Db:prepare('SELECT 1 FROM ao_profile_authorization WHERE wallet_address = ? LIMIT 1')
+-- 			check:bind_values(msg.From)
+
+-- 			if check:step() == sqlite3.ROW then
+-- 				ao.send({
+-- 					Target = msg.From,
+-- 					Action = 'Profile-Error',
+-- 					Tags = {
+-- 						Status = 'Error',
+-- 						Message = 'This user already has a profile'
+-- 					}
+-- 				})
+-- 			else
+-- 				local insert_meta = Db:prepare('INSERT INTO ao_profile_metadata (id, username) VALUES (?, ?)')
+-- 				insert_meta:bind_values(data.ProfileId, data.Username)
+-- 				insert_meta:step()
+
+-- 				local insert_auth = Db:prepare(
+-- 					'INSERT INTO ao_profile_authorization (profile_id, wallet_address) VALUES (?, ?)')
+-- 				insert_auth:bind_values(data.ProfileId, data.AuthorizedAddress)
+-- 				insert_auth:step()
+
+-- 				ao.send({
+-- 					Target = data.AuthorizedAddress,
+-- 					Action = 'Profile-Success',
+-- 					Tags = {
+-- 						Status = 'Success',
+-- 						Message = 'Profile added to registry'
+-- 					}
+-- 				})
+-- 			end
+-- 			check:finalize()
+-- 		else
+-- 			ao.send({
+-- 				Target = msg.From,
+-- 				Action = 'Input-Error',
+-- 				Tags = {
+-- 					Status = 'Error',
+-- 					Message = string.format(
+-- 						'Failed to parse data, received: %s. %s.', msg.Data,
+-- 						'Data must be an object - { ProfileId, AuthorizedAddress, Username }')
+-- 				}
+-- 			})
+-- 		end
+-- 	end)
 
 Handlers.add('Read-Metadata', Handlers.utils.hasMatchingTag('Action', 'Read-Metadata'),
 	function(msg)
