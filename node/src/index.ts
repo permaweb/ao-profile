@@ -99,7 +99,6 @@ async function createProfile() {
 	const dateTime = new Date().getTime().toString();
 
 	try {
-		// TODO: fetch from arweave
 		const processSrc: string = (await fs.readFile('../profile.lua', 'utf8' as any)).toString();
 
 		const profileTags: { name: string; value: string }[] = [
