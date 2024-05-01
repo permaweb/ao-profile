@@ -31,7 +31,8 @@ Handlers.add('Prepare-Database', Handlers.utils.hasMatchingTag('Action', 'Prepar
 		Db:exec [[
 			CREATE TABLE IF NOT EXISTS ao_profile_metadata (
 				id TEXT PRIMARY KEY,
-				username TEXT
+				username TEXT,
+				avatar TEXT
 			);
 		]]
 
@@ -80,7 +81,7 @@ Handlers.add('Get-Metadata-By-ProfileIds', Handlers.utils.hasMatchingTag('Action
 					local foundRows = false
 					for row in Db:nrows(query) do
 						foundRows = true
-						table.insert(metadata, { ProfileId = row.id, Username = row.username })
+						table.insert(metadata, { ProfileId = row.id, Username = row.username, Avatar = row.avatar })
 					end
 
 					if not foundRows then
@@ -205,13 +206,28 @@ Handlers.add('Update-Profile', Handlers.utils.hasMatchingTag('Action', 'Update-P
 				return
 			end
 
-			local insert_or_update_meta = Db:prepare([[
-                INSERT INTO ao_profile_metadata (id, username)
-                	VALUES (?, ?)
-                	ON CONFLICT(id) DO UPDATE SET username = excluded.username;
-            ]])
+			local insert_stmt
+			if data.Avatar then
+				insert_stmt = [[
+					INSERT INTO ao_profile_metadata (id, username, avatar)
+						VALUES (?, ?, ?)
+						ON CONFLICT(id) DO UPDATE SET username = excluded.username, avatar = excluded.avatar;
+				]]
+			else
+				insert_stmt = [[
+					INSERT INTO ao_profile_metadata (id, username)
+						VALUES (?, ?)
+						ON CONFLICT(id) DO UPDATE SET username = excluded.username, avatar = NULL;
+				]]
+			end
 
-			insert_or_update_meta:bind_values(data.ProfileId, data.Username)
+			local insert_or_update_meta = Db:prepare(insert_stmt)
+			if data.Avatar then
+				insert_or_update_meta:bind_values(data.ProfileId, data.Username, data.Avatar)
+			else
+				insert_or_update_meta:bind_values(data.ProfileId, data.Username)
+			end
+
 			insert_or_update_meta:step()
 			insert_or_update_meta:finalize()
 
@@ -257,6 +273,7 @@ Handlers.add('Read-Metadata', Handlers.utils.hasMatchingTag('Action', 'Read-Meta
 			print('Row - ' .. rowIndex)
 			print('Profile Id - ' .. row.id)
 			print('Username - ' .. row.username)
+			print('Avatar - ' .. (row.avatar or 'None'))
 			print('\n')
 		end
 	end)

@@ -125,7 +125,8 @@ Handlers.add('Update-Profile', Handlers.utils.hasMatchingTag('Action', 'Update-P
 				Data = json.encode({
 					ProfileId = ao.id,
 					AuthorizedAddress = msg.From,
-					Username = data.Username
+					Username = data.Username,
+					Avatar = data.Avatar
 				})
 			})
 
