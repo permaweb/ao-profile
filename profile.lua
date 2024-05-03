@@ -1,3 +1,4 @@
+local bint = require('.bint')(256)
 local json = require('json')
 
 -- Profile: {
@@ -22,6 +23,10 @@ local function check_valid_address(address)
 	end
 
 	return string.match(address, "^[%w%-_]+$") ~= nil and #address == 43
+end
+
+local function check_valid_amount(data)
+	return (math.type(tonumber(data)) == 'integer' or math.type(tonumber(data)) == 'float') and bint(data) > 0
 end
 
 local function decode_message_data(data)
@@ -58,7 +63,7 @@ local function validate_transfer_data(msg)
 	end
 
 	-- Check if quantity is a valid integer greater than zero
-	if not check_valid_address(data.Quantity) then
+	if not check_valid_amount(data.Quantity) then
 		return nil, 'Quantity must be an integer greater than zero'
 	end
 
@@ -233,7 +238,7 @@ Handlers.add('Add-Uploaded-Asset', Handlers.utils.hasMatchingTag('Action', 'Add-
 	end)
 
 -- Data - { Target, Recipient, Quantity }
-Handlers.add('Handle-Asset-Transfer', Handlers.utils.hasMatchingTag('Action', 'Handle-Asset-Transfer'),
+Handlers.add('Transfer', Handlers.utils.hasMatchingTag('Action', 'Transfer'),
 	function(msg)
 		if msg.From ~= Owner and msg.From ~= ao.id then
 			ao.send({
@@ -250,9 +255,18 @@ Handlers.add('Handle-Asset-Transfer', Handlers.utils.hasMatchingTag('Action', 'H
 		local data, error = validate_transfer_data(msg)
 
 		if data then
+			local forwardedTags = {}
+
+			for tagName, tagValue in pairs(msg) do
+				if string.sub(tagName, 1, 2) == 'X-' then
+					forwardedTags[tagName] = tagValue
+				end
+			end
+
 			ao.send({
 				Target = data.Target,
 				Action = 'Transfer',
+				Tags = forwardedTags,
 				Data = json.encode({
 					Recipient = data.Recipient,
 					Quantity = data.Quantity
@@ -307,6 +321,15 @@ Handlers.add('Debit-Notice', Handlers.utils.hasMatchingTag('Action', 'Debit-Noti
 				else
 					Assets[asset_index].Quantity = tostring(updated_quantity)
 				end
+
+				ao.send({
+					Target = Owner,
+					Action = 'Transfer-Success',
+					Tags = {
+						Status = 'Success',
+						Message = 'Balance transferred'
+					}
+				})
 			end
 		else
 			ao.send({
