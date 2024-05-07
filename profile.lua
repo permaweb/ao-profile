@@ -326,3 +326,82 @@ Handlers.add('Credit-Notice', Handlers.utils.hasMatchingTag('Action', 'Credit-No
 			})
 		end
 	end)
+
+-- Data - { Id, Quantity }
+Handlers.add('Add-Uploaded-Asset', Handlers.utils.hasMatchingTag('Action', 'Add-Uploaded-Asset'),
+	function(msg)
+		if msg.From ~= Owner and msg.From ~= ao.id then
+			ao.send({
+				Target = msg.From,
+				Action = 'Authorization-Error',
+				Tags = {
+					Status = 'Error',
+					Message = 'Unauthorized to access this handler'
+				}
+			})
+			return
+		end
+
+		local decode_check, data = decode_message_data(msg.Data)
+
+		if decode_check and data then
+			if not data.Id or not data.Quantity then
+				ao.send({
+					Target = msg.From,
+					Action = 'Input-Error',
+					Tags = {
+						Status = 'Error',
+						Message =
+						'Invalid arguments, required { Id, Quantity }'
+					}
+				})
+				return
+			end
+
+			if not check_valid_address(data.Id) then
+				ao.send({ Target = msg.From, Action = 'Validation-Error', Tags = { Status = 'Error', Message = 'Asset Id must be a valid address' } })
+				return
+			end
+
+			local exists = false
+			for _, asset in ipairs(Assets) do
+				if asset.Id == data.Id then
+					exists = true
+					break
+				end
+			end
+
+			if not exists then
+				table.insert(Assets, { Id = data.Id, Quantity = data.Quantity })
+				ao.send({
+					Target = msg.From,
+					Action = 'Add-Uploaded-Asset-Success',
+					Tags = {
+						Status = 'Success',
+						Message = 'Asset added to profile'
+					}
+				})
+			else
+				ao.send({
+					Target = msg.From,
+					Action = 'Validation-Error',
+					Tags = {
+						Status = 'Error',
+						Message = string.format(
+							'Asset with Id %s already exists', data.Id)
+					}
+				})
+			end
+		else
+			ao.send({
+				Target = msg.From,
+				Action = 'Input-Error',
+				Tags = {
+					Status = 'Error',
+					Message = string.format(
+						'Failed to parse data, received: %s. %s.', msg.Data,
+						'Data must be an object - { Id, Quantity }')
+				}
+			})
+		end
+	end)
