@@ -82,7 +82,8 @@ Handlers.add('Info', Handlers.utils.hasMatchingTag('Action', 'Info'),
 			Action = 'Read-Success',
 			Data = json.encode({
 				Profile = Profile,
-				Assets = Assets
+				Assets = Assets,
+				Owner = Owner
 			})
 		})
 	end)
@@ -401,6 +402,66 @@ Handlers.add('Add-Uploaded-Asset', Handlers.utils.hasMatchingTag('Action', 'Add-
 					Message = string.format(
 						'Failed to parse data, received: %s. %s.', msg.Data,
 						'Data must be an object - { Id, Quantity }')
+				}
+			})
+		end
+	end)
+
+Handlers.add('Action-Response', Handlers.utils.hasMatchingTag('Action', 'Action-Response'),
+	function(msg)
+		if msg.Tags['Status'] and msg.Tags['Message'] then
+			local response_tags = {
+				Status = msg.Tags['Status'],
+				Message = msg.Tags['Message']
+			}
+
+			if msg.Tags['Handler'] then response_tags.Handler = msg.Tags['Handler'] end
+
+			ao.send({
+				Target = Owner,
+				Action = 'Action-Response',
+				Tags = response_tags
+			})
+		end
+	end)
+
+Handlers.add('Run-Action', Handlers.utils.hasMatchingTag('Action', 'Run-Action'),
+	function(msg)
+		local decode_check, data = decode_message_data(msg.Data)
+
+		if decode_check and data then
+			if not data.Target or not data.Action or not data.Input then
+				ao.send({
+					Target = msg.From,
+					Action = 'Input-Error',
+					Tags = {
+						Status = 'Error',
+						Message =
+						'Invalid arguments, required { Target, Action, Input }'
+					}
+				})
+				return
+			end
+
+			if not check_valid_address(data.Target) then
+				ao.send({ Target = msg.From, Action = 'Validation-Error', Tags = { Status = 'Error', Message = 'Target must be a valid address' } })
+				return
+			end
+
+			ao.send({
+				Target = data.Target,
+				Action = data.Action,
+				Data = data.Input
+			})
+		else
+			ao.send({
+				Target = msg.From,
+				Action = 'Input-Error',
+				Tags = {
+					Status = 'Error',
+					Message = string.format(
+						'Failed to parse data, received: %s. %s.', msg.Data,
+						'Data must be an object - { Target, Action, Input }')
 				}
 			})
 		end
