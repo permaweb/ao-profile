@@ -32,6 +32,7 @@ Handlers.add('Prepare-Database', Handlers.utils.hasMatchingTag('Action', 'Prepar
 			CREATE TABLE IF NOT EXISTS ao_profile_metadata (
 				id TEXT PRIMARY KEY,
 				username TEXT,
+				bio TEXT,
 				avatar TEXT
 			);
 		]]
@@ -67,7 +68,7 @@ Handlers.add('Get-Metadata-By-ProfileIds', Handlers.utils.hasMatchingTag('Action
 			end
 
 			local metadata = {}
-			print(data.ProfileIds)
+
 			if data.ProfileIds and #data.ProfileIds > 0 then
 				local profileIdList = {}
 				for _, id in ipairs(data.ProfileIds) do
@@ -81,7 +82,8 @@ Handlers.add('Get-Metadata-By-ProfileIds', Handlers.utils.hasMatchingTag('Action
 					local foundRows = false
 					for row in Db:nrows(query) do
 						foundRows = true
-						table.insert(metadata, { ProfileId = row.id, Username = row.username, Avatar = row.avatar })
+						table.insert(metadata,
+							{ ProfileId = row.id, Username = row.username, Bio = row.bio, Avatar = row.avatar })
 					end
 
 					if not foundRows then
@@ -189,79 +191,90 @@ Handlers.add('Get-Profiles-By-Address', Handlers.utils.hasMatchingTag('Action', 
 		end
 	end)
 
-Handlers.add('Update-Profile', Handlers.utils.hasMatchingTag('Action', 'Update-Profile'),
-	function(msg)
-		local decode_check, data = decode_message_data(msg.Data)
+Handlers.add('Update-Profile', Handlers.utils.hasMatchingTag('Action', 'Update-Profile'), function(msg)
+	local decode_check, data = decode_message_data(msg.Data)
 
-		if decode_check and data then
-			if not data.ProfileId or not data.AuthorizedAddress or not data.Username then
-				ao.send({
-					Target = msg.From,
-					Action = 'Input-Error',
-					Tags = {
-						Status = 'Error',
-						Message = 'Invalid arguments, required { ProfileId, AuthorizedAddress, Username }'
-					}
-				})
-				return
-			end
-
-			local insert_stmt
-			if data.Avatar then
-				insert_stmt = [[
-					INSERT INTO ao_profile_metadata (id, username, avatar)
-						VALUES (?, ?, ?)
-						ON CONFLICT(id) DO UPDATE SET username = excluded.username, avatar = excluded.avatar;
-				]]
-			else
-				insert_stmt = [[
-					INSERT INTO ao_profile_metadata (id, username)
-						VALUES (?, ?)
-						ON CONFLICT(id) DO UPDATE SET username = excluded.username, avatar = NULL;
-				]]
-			end
-
-			local insert_or_update_meta = Db:prepare(insert_stmt)
-			if data.Avatar then
-				insert_or_update_meta:bind_values(data.ProfileId, data.Username, data.Avatar)
-			else
-				insert_or_update_meta:bind_values(data.ProfileId, data.Username)
-			end
-
-			insert_or_update_meta:step()
-			insert_or_update_meta:finalize()
-
-			local check = Db:prepare('SELECT 1 FROM ao_profile_authorization WHERE wallet_address = ? LIMIT 1')
-			check:bind_values(data.AuthorizedAddress)
-
-			if check:step() ~= sqlite3.ROW then
-				local insert_auth = Db:prepare(
-					'INSERT INTO ao_profile_authorization (profile_id, wallet_address) VALUES (?, ?)')
-				insert_auth:bind_values(data.ProfileId, data.AuthorizedAddress)
-				insert_auth:step()
-			end
-
-			ao.send({
-				Target = data.AuthorizedAddress,
-				Action = 'Profile-Success',
-				Tags = {
-					Status = 'Success',
-					Message = 'Profile successfully updated in the registry'
-				}
-			})
-		else
+	if decode_check and data then
+		if not data.ProfileId or not data.AuthorizedAddress or not data.Username then
 			ao.send({
 				Target = msg.From,
 				Action = 'Input-Error',
 				Tags = {
 					Status = 'Error',
-					Message = string.format(
-						'Failed to parse data, received: %s. %s.', msg.Data,
-						'Data must be an object - { ProfileId, AuthorizedAddress, Username }')
+					Message = 'Invalid arguments, required { ProfileId, AuthorizedAddress, Username }'
 				}
 			})
+			return
 		end
-	end)
+
+		local fields = { "id", "username" }
+		local values = { data.ProfileId, data.Username }
+		local update_clause = { "username = excluded.username" }
+
+		if data.Avatar then
+			table.insert(fields, "avatar")
+			table.insert(values, data.Avatar)
+			table.insert(update_clause, "avatar = excluded.avatar")
+		end
+
+		if data.Bio then
+			table.insert(fields, "bio")
+			table.insert(values, data.Bio)
+			table.insert(update_clause, "bio = excluded.bio")
+		end
+
+		for key, value in pairs(data) do
+			if key ~= "ProfileId" and key ~= "AuthorizedAddress" and key ~= "Username" and key ~= "Avatar" and key ~= "Bio" then
+				table.insert(fields, key)
+				table.insert(values, value)
+				table.insert(update_clause, key .. " = excluded." .. key)
+			end
+		end
+
+		local insert_stmt = string.format([[
+				INSERT INTO ao_profile_metadata (%s)
+				VALUES (%s)
+				ON CONFLICT(id) DO UPDATE SET %s;
+			]], table.concat(fields, ", "), string.rep("?, ", #fields - 1) .. "?", table.concat(update_clause, ", "))
+
+		local insert_or_update_meta = Db:prepare(insert_stmt)
+		insert_or_update_meta:bind_values(table.unpack(values))
+		insert_or_update_meta:step()
+		insert_or_update_meta:finalize()
+
+		local check = Db:prepare('SELECT 1 FROM ao_profile_authorization WHERE wallet_address = ? LIMIT 1')
+		check:bind_values(data.AuthorizedAddress)
+
+		if check:step() ~= sqlite3.ROW then
+			local insert_auth = Db:prepare(
+			'INSERT INTO ao_profile_authorization (profile_id, wallet_address) VALUES (?, ?)')
+			insert_auth:bind_values(data.ProfileId, data.AuthorizedAddress)
+			insert_auth:step()
+			insert_auth:finalize()
+		end
+
+		check:finalize()
+
+		ao.send({
+			Target = data.AuthorizedAddress,
+			Action = 'Profile-Success',
+			Tags = {
+				Status = 'Success',
+				Message = 'Profile successfully updated in the registry'
+			}
+		})
+	else
+		ao.send({
+			Target = msg.From,
+			Action = 'Input-Error',
+			Tags = {
+				Status = 'Error',
+				Message = string.format('Failed to parse data, received: %s. %s.', msg.Data,
+					'Data must be an object - { ProfileId, AuthorizedAddress, Username }')
+			}
+		})
+	end
+end)
 
 Handlers.add('Read-Metadata', Handlers.utils.hasMatchingTag('Action', 'Read-Metadata'),
 	function(msg)
@@ -273,6 +286,7 @@ Handlers.add('Read-Metadata', Handlers.utils.hasMatchingTag('Action', 'Read-Meta
 			print('Row - ' .. rowIndex)
 			print('Profile Id - ' .. row.id)
 			print('Username - ' .. row.username)
+			print('Bio - ' .. row.bio)
 			print('Avatar - ' .. (row.avatar or 'None'))
 			print('\n')
 		end
