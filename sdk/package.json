@@ -1,0 +1,35 @@
+{
+	"name": "@permaweb/ao-profile",
+	"version": "0.0.1",
+	"description": "",
+	"main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+	"files": [
+		"dist"
+	],
+	"keywords": [],
+	"author": "",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/permaweb/ao-profile.git",
+		"directory": "sdk"
+	},
+	"scripts": {
+		"build": "tsc && tsc-alias"
+	},
+	"dependencies": {
+		"@permaweb/aoconnect": "^0.0.59",
+    "tsc-alias": "^1.8.10"
+	},
+	"devDependencies": {
+		"@types/async-retry": "^1.4.9",
+		"@types/node": "^22.7.6",
+		"@typescript-eslint/eslint-plugin": "^5.57.1",
+		"@typescript-eslint/parser": "^5.57.1",
+		"eslint": "^8.35.0",
+		"eslint-plugin-import": "^2.27.5",
+		"eslint-plugin-simple-import-sort": "^10.0.0",
+		"typescript": "^5.5.4"
+	}
+}
