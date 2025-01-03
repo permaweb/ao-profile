@@ -21,6 +21,10 @@ const {
   getByWallet, 
   getRegistryProfiles 
 } = init({ ao, signer, logging: true });
+
+// there other optional parameters to init:
+// profileSrc, arweaveUrl, graphqlUrl, and registry (the id of the profile registry)
+
 ```
 
 Creating and Editing Profiles, use the functions initialized above.
