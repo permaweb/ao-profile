@@ -32,7 +32,7 @@ export async function readHandler(args: {
 	}
 }
 
-export function getByIdWith(deps: { ao: any }) {
+export function getByIdWith(deps: { ao: any, registry?: string }) {
   return async (args: { profileId: string }): Promise<ProfileType | null> => {
     const emptyProfile: ProfileType = {
       id: args.profileId,
@@ -74,7 +74,7 @@ export function getByIdWith(deps: { ao: any }) {
   }
 }
 
-export function getByWalletWith(deps: { ao: any }) {
+export function getByWalletWith(deps: { ao: any, registry?: string }) {
   return async(args: { address: string }): Promise<ProfileType | null> => {
     const emptyProfile: ProfileType = {
       id: null,
@@ -89,7 +89,7 @@ export function getByWalletWith(deps: { ao: any }) {
   
     try {
       const profileLookup = await readHandler({
-        processId: AO.profileRegistry,
+        processId: deps.registry ? deps.registry : AO.profileRegistry,
         action: 'Get-Profiles-By-Delegate',
         data: { Address: args.address },
         ao: deps.ao
@@ -130,11 +130,11 @@ export function getByWalletWith(deps: { ao: any }) {
   }
 }
 
-export function getRegistryProfilesWith(deps: { ao: any }) {
+export function getRegistryProfilesWith(deps: { ao: any, registry?: string }) {
   return async (args: { profileIds: string[] }): Promise<RegistryProfileType[]> => {
     try {
       const metadataLookup = await readHandler({
-        processId: AO.profileRegistry,
+        processId: deps.registry ? deps.registry : AO.profileRegistry,
         action: 'Get-Metadata-By-ProfileIds',
         data: { ProfileIds: args.profileIds },
         ao: deps.ao

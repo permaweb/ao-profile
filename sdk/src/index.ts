@@ -128,7 +128,8 @@ export const init = (deps: {
   profileSrc?: string,
   arweaveUrl?: string,
   graphqlUrl?: string,
-  logging?: boolean
+  logging?: boolean,
+  registry?: string,
 }) => {
   return {
     create: createProfileWith({ 
@@ -143,8 +144,8 @@ export const init = (deps: {
       signer: deps.signer,
       logging: deps.logging
     }),
-    getById: getByIdWith({ ao: deps.ao }),
-    getByWallet: getByWalletWith({ ao: deps.ao }),
-    getRegistryProfiles: getRegistryProfilesWith({ ao: deps.ao })
+    getById: getByIdWith({ ao: deps.ao, registry: deps.registry }),
+    getByWallet: getByWalletWith({ ao: deps.ao, registry: deps.registry }),
+    getRegistryProfiles: getRegistryProfilesWith({ ao: deps.ao, registry: deps.registry })
   }
 };
