@@ -48,8 +48,7 @@ export type DefaultGQLResponseType = {
 } & GQLResponseType;
 
 export type CreateProfileArgs = {
-  wallet: any,
-  data: any,
+  data: ProfileInput,
   profileSrc?: string,
   module?: string,
   scheduler?: string,
@@ -57,6 +56,33 @@ export type CreateProfileArgs = {
 
 export type EditProfileArgs = { 
   profileId: string, 
-  wallet: any, 
-  data: any 
+  data: ProfileInput 
+};
+
+export type ProfileInput = {
+  userName: string,
+  displayName?: string,
+  coverImage?: string,
+  profileImage?: string,
+  description?: string
+}
+
+export type ProfileType = {
+	id: string | null;
+	walletAddress: string| null;
+	displayName: string | null;
+	username: string | null;
+	bio: string | null;
+	avatar: string | null;
+	banner: string | null;
+	version: string | null;
+	assets?: string[];
+};
+
+export type RegistryProfileType = {
+	id: string;
+	avatar: string | null;
+	username: string;
+	bio?: string;
+	lastUpdate?: number;
 };

@@ -142,23 +142,21 @@ export function getTagValue(list: { [key: string]: any }[], name: string): strin
 
 export async function messageResult(args: {
 	processId: string;
-	wallet: any;
 	action: string;
 	tags: TagType[] | null;
-	data: any;
-	useRawData?: boolean;
+	data: string;
   ao: any;
-  createDataItemSigner: any;
+  signer: any;
 }): Promise<any> {
 	try {
 		const tags = [{ name: 'Action', value: args.action }];
 		if (args.tags) tags.push(...args.tags);
 
-		const data = args.useRawData ? args.data : JSON.stringify(args.data);
+		const data = args.data;
 
 		const txId = await args.ao.message({
 			process: args.processId,
-			signer: args.createDataItemSigner(args.wallet),
+			signer: args.signer,
 			tags: tags,
 			data: data,
 		});
@@ -198,4 +196,13 @@ export async function messageResult(args: {
 	} catch (e) {
 		console.error(e);
 	}
+}
+
+export function uppercaseKeys(obj: any) {
+  return Object.fromEntries(
+      Object.entries(obj).map(([key, value]) => [
+          key.charAt(0).toUpperCase() + key.slice(1),
+          value
+      ])
+  );
 }

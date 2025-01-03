@@ -1,17 +1,18 @@
-import { connect, createDataItemSigner } from '@permaweb/aoconnect';
-import { getGQLData, messageResult } from './helpers';
+import { getGQLData, messageResult, uppercaseKeys } from './helpers';
 import { AO, ARWEAVE_ENDPOINT, GATEWAYS } from './config';
 import { CreateProfileArgs, EditProfileArgs } from './types';
+import { getByIdWith, getByWalletWith, getRegistryProfilesWith } from 'queries';
 
-// create tests/test
+// getRegistryProfiles getProfileByWalletAddress getProfileById
 // fix up readme
 // publish
-// getRegistryProfiles getProfileByWalletAddress getProfileById
 
 function createProfileWith(deps: { 
   ao: any,
+  signer: any,
   arweaveUrl: string,
-  graphqlUrl: string
+  graphqlUrl: string,
+  logging?: boolean
 }) : (args: CreateProfileArgs) => Promise<string> {
   return async (args: CreateProfileArgs): Promise<string> => {
     try {
@@ -29,18 +30,18 @@ function createProfileWith(deps: {
         { name: 'Action', value: 'Create-Profile' },
       ];
   
-      console.log('Spawning profile process...');
+      if(deps.logging) console.log('Spawning profile process...');
       const processId = await deps.ao.spawn({
         module: args.module ? args.module : AO.module,
         scheduler: args.scheduler ? args.scheduler : AO.scheduler,
-        signer: createDataItemSigner(args.wallet),
+        signer: deps.signer,
         tags: profileTags,
-        data: args.data,
+        data: JSON.stringify(uppercaseKeys(args.data)),
       });
   
-      console.log(`Process Id -`, processId);
+      if(deps.logging) console.log(`Process Id -`, processId);
   
-      console.log('Fetching profile process...');
+      if(deps.logging) console.log('Fetching profile process...');
       let fetchedAssetId: string | null = null;
       let retryCount: number = 0;
       while (!fetchedAssetId) {
@@ -54,10 +55,10 @@ function createProfileWith(deps: {
         });
   
         if (gqlResponse && gqlResponse.data.length) {
-          console.log(`Fetched transaction -`, gqlResponse.data[0].node.id);
+          if(deps.logging) console.log(`Fetched transaction -`, gqlResponse.data[0].node.id);
           fetchedAssetId = gqlResponse.data[0].node.id;
         } else {
-          console.log(`Transaction not found -`, processId);
+          if(deps.logging) console.log(`Transaction not found -`, processId);
           retryCount++;
           if (retryCount >= 200) {
             throw new Error(`Profile not found, please try again`);
@@ -65,35 +66,34 @@ function createProfileWith(deps: {
         }
       }
       
-      console.log('Sending source eval...');
+      if(deps.logging) console.log('Sending source eval...');
       const evalMessage = await deps.ao.message({
         process: processId,
-        signer: createDataItemSigner(args.wallet),
+        signer: deps.signer,
         tags: [{ name: 'Action', value: 'Eval' }],
         data: processSrc,
       });
   
-      console.log(evalMessage);
+      if(deps.logging) console.log(evalMessage);
   
       const evalResult = await deps.ao.result({
         message: evalMessage,
         process: processId,
       });
   
-      console.log(evalResult);
+      if(deps.logging) console.log(evalResult);
   
       await new Promise((r) => setTimeout(r, 1000));
   
-      console.log('Updating profile data...');
+      if(deps.logging) console.log('Updating profile data...');
 
       await messageResult({
         processId: processId,
         action: 'Update-Profile',
         tags: null,
-        data: args.data,
-        wallet: args.wallet,
+        data: JSON.stringify(uppercaseKeys(args.data)),
         ao: deps.ao,
-        createDataItemSigner
+        signer: deps.signer
       });
 
       return processId;
@@ -104,37 +104,47 @@ function createProfileWith(deps: {
 }
 
 function updateProfileWith(deps: { 
-  ao: any
+  ao: any,
+  signer: any,
+  logging?: boolean
  }): (args: EditProfileArgs) => Promise<string> {
   return async (args: EditProfileArgs): Promise<string> => {
+    if(deps.logging) console.log(`Updating Profile ${args.profileId}`);
     let updateResponse = await messageResult({
       processId: args.profileId,
       action: 'Update-Profile',
       tags: [{ name: 'ProfileProcess', value: args.profileId }],
-      data: args.data,
-      wallet: args.wallet,
+      data: JSON.stringify(uppercaseKeys(args.data)),
       ao: deps.ao,
-      createDataItemSigner
+      signer: deps.signer
     });
-    return updateResponse.id;
+    return updateResponse['Profile-Success']?.id;
   }
 }
 
-export const initialize = (args: { 
+export const init = (deps: { 
+  ao: any,
+  signer: any,
   profileSrc?: string,
   arweaveUrl?: string,
-  graphqlUrl?: string
+  graphqlUrl?: string,
+  logging?: boolean
 }) => {
-  let aoDefault: any = connect();
-
   return {
     create: createProfileWith({ 
-      ao: aoDefault,
-      arweaveUrl: args.arweaveUrl ? args.arweaveUrl : ARWEAVE_ENDPOINT, 
-      graphqlUrl: args.graphqlUrl ? args.graphqlUrl : GATEWAYS.goldsky,
+      ao: deps.ao,
+      signer: deps.signer,
+      arweaveUrl: deps?.arweaveUrl ? deps.arweaveUrl : ARWEAVE_ENDPOINT, 
+      graphqlUrl: deps?.graphqlUrl ? deps.graphqlUrl : GATEWAYS.goldsky,
+      logging: deps.logging
     }),
     update: updateProfileWith({
-      ao: aoDefault
-    })
+      ao: deps.ao,
+      signer: deps.signer,
+      logging: deps.logging
+    }),
+    getById: getByIdWith({ ao: deps.ao }),
+    getByWallet: getByWalletWith({ ao: deps.ao }),
+    getRegistryProfiles: getRegistryProfilesWith({ ao: deps.ao })
   }
 };
