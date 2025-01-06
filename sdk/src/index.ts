@@ -149,3 +149,5 @@ export const init = (deps: {
     getRegistryProfiles: getRegistryProfilesWith({ ao: deps.ao, registry: deps.registry })
   }
 };
+
+export * from 'types';

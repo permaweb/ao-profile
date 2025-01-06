@@ -1,4 +1,7 @@
 import esbuild from 'esbuild';
+import { execSync } from 'child_process';
+import fs from 'fs';
+import path from 'path';
 
 const sharedConfig = {
   entryPoints: ['src/index.ts'],    // Entry file for the SDK
@@ -27,6 +30,13 @@ const buildConfigs = [
 async function build() {
   try {
     await Promise.all(buildConfigs.map(config => esbuild.build(config)));
+    console.log('Generating type declarations...');
+    execSync('tsc --emitDeclarationOnly', { stdio: 'inherit' });
+
+    // Verify that types exist in the dist directory
+    if (!fs.existsSync(path.resolve('dist/index.d.ts'))) {
+      throw new Error('Type declarations not found in dist directory.');
+    }
     console.log('Build complete!');
   } catch (error) {
     console.error('Build failed:', error);
