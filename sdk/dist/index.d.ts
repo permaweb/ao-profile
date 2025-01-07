@@ -20,4 +20,4 @@ export declare const init: (deps: {
         profileIds: string[];
     }) => Promise<import("./types").RegistryProfileType[]>;
 };
-export * from 'types';
+export * from './types';

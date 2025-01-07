@@ -150,4 +150,4 @@ export const init = (deps: {
   }
 };
 
-export * from 'types';
+export * from './types';
