@@ -1,6 +1,6 @@
 {
 	"name": "@permaweb/aoprofile",
-	"version": "0.0.5",
+	"version": "0.0.6",
 	"type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -9,10 +9,10 @@
   "typesVersions": {
     "*": {
       "browser": [
-        "./dist/index.d.ts"
+        "./dist/types/index.d.ts"
       ],
       ".": [
-        "./dist/index.d.ts"
+        "./dist/types/index.d.ts"
       ]
     }
   },
