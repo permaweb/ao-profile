@@ -17,9 +17,17 @@ const buildConfigs = [
 	// Node.js (CJS)
 	{
 		...sharedConfig,
-		outfile: 'dist/index.cjs.js',
+		outfile: 'dist/index.cjs',
 		platform: 'node',
 		format: 'cjs',
+		plugins: [dtsPlugin({ outDir: 'dist/types' })],
+	},
+  // Node.js (ESM)
+  {
+		...sharedConfig,
+		outfile: 'dist/index.js',
+		platform: 'node',
+		format: 'esm',
 		plugins: [dtsPlugin({ outDir: 'dist/types' })],
 	},
 	// Browser (ESM)

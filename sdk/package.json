@@ -2,9 +2,20 @@
 	"name": "@permaweb/aoprofile",
 	"version": "0.0.5",
 	"type": "module",
-	"main": "dist/index.cjs.js",
-	"module": "dist/index.esm.js",
-	"types": "dist/types/index.d.ts",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "browser": "./dist/index.esm.js",
+  "types": "./dist/types/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "browser": [
+        "./dist/index.d.ts"
+      ],
+      ".": [
+        "./dist/index.d.ts"
+      ]
+    }
+  },
 	"description": "",
 	"files": [
 		"dist"
@@ -20,8 +31,11 @@
 	"exports": {
 		".": {
 			"import": "./dist/index.esm.js",
-			"require": "./dist/index.cjs.js"
-		}
+			"require": "./dist/index.cjs",
+      "default": "./dist/index.js"
+		},
+    "./browser": "./dist/index.esm.js",
+    "./node": "./dist/index.js"
 	},
 	"scripts": {
 		"format": "eslint --fix . && npx prettier --write .",
