@@ -1,47 +1,49 @@
 import esbuild from 'esbuild';
-import { execSync } from 'child_process';
-import fs from 'fs';
+import dtsPlugin from 'esbuild-plugin-d.ts';
 import path from 'path';
 
 const sharedConfig = {
-  entryPoints: ['src/index.ts'],    // Entry file for the SDK
-  bundle: true,                     // Bundle all dependencies
-  sourcemap: true,                  // Generate source maps
-  minify: true,                     // Minify the output for production
+	entryPoints: ['src/index.ts'],
+	bundle: true,
+	sourcemap: true,
+	minify: true,
+	inject: [path.resolve('node_modules/process/browser.js')], // Explicitly inject the process polyfill
+  define: {
+    'process.env.NODE_ENV': JSON.stringify('production'),
+  },
 };
 
 const buildConfigs = [
-  // Node.js (CJS)
-  {
-    ...sharedConfig,
-    outfile: 'dist/index.cjs.js',
-    platform: 'node',              // Node.js environment
-    format: 'cjs',                 // CommonJS format
-  },
-  // Browser (ESM)
-  {
-    ...sharedConfig,
-    outfile: 'dist/index.esm.js',
-    platform: 'browser',           // Browser environment
-    format: 'esm',                 // ES Module format
-  },
+	// Node.js (CJS)
+	{
+		...sharedConfig,
+		outfile: 'dist/index.cjs.js',
+		platform: 'node',
+		format: 'cjs',
+		plugins: [dtsPlugin({ outDir: 'dist/types' })],
+	},
+	// Browser (ESM)
+	{
+		...sharedConfig,
+		outfile: 'dist/index.esm.js',
+		platform: 'browser',
+		format: 'esm',
+		plugins: [dtsPlugin({ outDir: 'dist/types' })],
+	},
 ];
 
 async function build() {
-  try {
-    await Promise.all(buildConfigs.map(config => esbuild.build(config)));
-    console.log('Generating type declarations...');
-    execSync('tsc --emitDeclarationOnly', { stdio: 'inherit' });
-
-    // Verify that types exist in the dist directory
-    if (!fs.existsSync(path.resolve('dist/index.d.ts'))) {
-      throw new Error('Type declarations not found in dist directory.');
-    }
-    console.log('Build complete!');
-  } catch (error) {
-    console.error('Build failed:', error);
-    process.exit(1);
-  }
+	try {
+		await Promise.all(buildConfigs.map(async (config, index) => {
+			console.log(`Building configuration ${index + 1}:`, config.outfile);
+			await esbuild.build(config);
+			console.log(`Finished building configuration ${index + 1}:`, config.outfile);
+		}));
+		console.log('Build complete!');
+	} catch (error) {
+		console.error('Build failed:', error);
+		process.exit(1);
+	}
 }
 
 build();
