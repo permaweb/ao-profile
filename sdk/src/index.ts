@@ -3,7 +3,9 @@ import { AO, ARWEAVE_ENDPOINT, GATEWAYS } from './config';
 import { CreateProfileArgs, EditProfileArgs } from './types';
 import { getByIdWith, getByWalletWith, getRegistryProfilesWith } from 'queries';
 
+// TODO
 // getRegistryProfiles getProfileByWalletAddress getProfileById
+// Take raw media data as input (permaweb-libs has a resolveTx function that handles this)
 // fix up readme
 // publish
 
@@ -122,7 +124,7 @@ function updateProfileWith(deps: {
   }
 }
 
-export const init = (deps: { 
+export const initAOProfile = (deps: { 
   ao: any,
   signer: any,
   profileSrc?: string,
@@ -132,20 +134,20 @@ export const init = (deps: {
   registry?: string,
 }) => {
   return {
-    create: createProfileWith({ 
+    createProfile: createProfileWith({ 
       ao: deps.ao,
       signer: deps.signer,
       arweaveUrl: deps?.arweaveUrl ? deps.arweaveUrl : ARWEAVE_ENDPOINT, 
       graphqlUrl: deps?.graphqlUrl ? deps.graphqlUrl : GATEWAYS.goldsky,
       logging: deps.logging
     }),
-    update: updateProfileWith({
+    updateProfile: updateProfileWith({
       ao: deps.ao,
       signer: deps.signer,
       logging: deps.logging
     }),
-    getById: getByIdWith({ ao: deps.ao, registry: deps.registry }),
-    getByWallet: getByWalletWith({ ao: deps.ao, registry: deps.registry }),
+    getProfileById: getByIdWith({ ao: deps.ao, registry: deps.registry }),
+    getProfileByWalletAddress: getByWalletWith({ ao: deps.ao, registry: deps.registry }),
     getRegistryProfiles: getRegistryProfilesWith({ ao: deps.ao, registry: deps.registry })
   }
 };
