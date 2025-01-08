@@ -39,8 +39,8 @@ export function getByIdWith(deps: { ao: any, registry?: string }) {
       walletAddress: null,
       displayName: null,
       username: null,
-      bio: null,
-      avatar: null,
+      description: null,
+      thumbnail: null,
       banner: null,
       version: null,
     };
@@ -59,8 +59,8 @@ export function getByIdWith(deps: { ao: any, registry?: string }) {
           walletAddress: fetchedProfile.Owner || null,
           displayName: fetchedProfile.Profile.DisplayName || null,
           username: fetchedProfile.Profile.UserName || null,
-          bio: fetchedProfile.Profile.Description || null,
-          avatar: fetchedProfile.Profile.ProfileImage || null,
+          description: fetchedProfile.Profile.Description || null,
+          thumbnail: fetchedProfile.Profile.ProfileImage || null,
           banner: fetchedProfile.Profile.CoverImage || null,
           version: fetchedProfile.Profile.Version || null,
           assets: fetchedProfile.Assets?.map((asset: { Id: string; Quantity: string }) => asset.Id) ?? [],
@@ -81,8 +81,8 @@ export function getByWalletWith(deps: { ao: any, registry?: string }) {
       walletAddress: args.address,
       displayName: null,
       username: null,
-      bio: null,
-      avatar: null,
+      description: null,
+      thumbnail: null,
       banner: null,
       version: null,
     };
@@ -114,8 +114,8 @@ export function getByWalletWith(deps: { ao: any, registry?: string }) {
             walletAddress: fetchedProfile.Owner || null,
             displayName: fetchedProfile.Profile.DisplayName || null,
             username: fetchedProfile.Profile.UserName || null,
-            bio: fetchedProfile.Profile.Description || null,
-            avatar: fetchedProfile.Profile.ProfileImage || null,
+            description: fetchedProfile.Profile.Description || null,
+            thumbnail: fetchedProfile.Profile.ProfileImage || null,
             banner: fetchedProfile.Profile.CoverImage || null,
             version: fetchedProfile.Profile.Version || null,
             assets: fetchedProfile.Assets?.map((asset: { Id: string; Quantity: string }) => asset.Id) ?? [],
@@ -146,9 +146,9 @@ export function getRegistryProfilesWith(deps: { ao: any, registry?: string }) {
           return {
             id: profile ? profile.ProfileId : profileId,
             username: profile ? profile.Username : null,
-            avatar: profile ? profile.ProfileImage : null,
-            bio: profile ? profile.Description ?? null : null,
-            lastUpdate: Date.now(),
+            thumbnail: profile ? profile.ProfileImage : null,
+            description: profile ? profile.Description ?? null : null,
+            lastUpdate: Date.now().toString(),
           };
         });
       }

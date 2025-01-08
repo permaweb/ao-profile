@@ -62,8 +62,8 @@ export type EditProfileArgs = {
 export type ProfileInput = {
   userName: string,
   displayName?: string,
-  coverImage?: string,
-  profileImage?: string,
+	thumbnail?: string,
+  banner?: string,
   description?: string
 }
 
@@ -72,8 +72,8 @@ export type ProfileType = {
 	walletAddress: string| null;
 	displayName: string | null;
 	username: string | null;
-	bio: string | null;
-	avatar: string | null;
+	description: string | null;
+	thumbnail: string | null;
 	banner: string | null;
 	version: string | null;
 	assets?: string[];
@@ -81,8 +81,8 @@ export type ProfileType = {
 
 export type RegistryProfileType = {
 	id: string;
-	avatar: string | null;
 	username: string;
-	bio?: string;
-	lastUpdate?: number;
+	thumbnail: string | null;
+	description?: string;
+	lastUpdate?: string;
 };
