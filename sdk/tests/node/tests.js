@@ -1,17 +1,22 @@
 import { readFileSync } from 'fs';
 import { connect, createDataItemSigner } from '@permaweb/aoconnect';
-import { initAOProfile } from '@permaweb/ao-profile';
+import AOProfile from '@permaweb/ao-profile';
+import Arweave from 'arweave';
 
 const ao = connect();
 const wallet = JSON.parse(readFileSync(process.env.PATH_TO_WALLET, 'utf-8'));
 const signer = createDataItemSigner(wallet);
+const arweave = Arweave.init();
 const { 
   createProfile, 
   updateProfile, 
+} = AOProfile.init({ ao, signer, arweave, logging: true });
+
+const { 
   getProfileById, 
   getProfileByWalletAddress, 
   getRegistryProfiles 
-} = initAOProfile({ ao, signer, logging: true });
+} = AOProfile.init({ ao, logging: true });
 
 async function runTests() {
   const data = {

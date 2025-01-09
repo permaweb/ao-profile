@@ -24,14 +24,35 @@ yarn add @permaweb/aoprofile
 
 ```typescript
 import { connect, createDataItemSigner } from '@permaweb/aoconnect';
-import { initAOProfile } from '@permaweb/aoprofile';
+import Arweave from 'arweave';
+import AOProfile from '@permaweb/aoprofile';
 
 const ao = connect();
 const signer = createDataItemSigner(window.arweaveWallet);
 
-const { createProfile, updateProfile, getProfileById, getProfileByWalletAddress, getRegistryProfiles } = init({
+// Note: arweave is only required for uploading files via data urls, not if 
+// sending txid's as the images to createProfile and updateProfile,
+// signer is required for all uses of createProfile and updateProfile
+const { 
+  createProfile, 
+  updateProfile,
+  getProfileById, 
+  getProfileByWalletAddress, 
+  getRegistryProfiles
+} = AOProfile.init({
 	ao,
 	signer,
+	logging: true,
+  arweave: Arweave.init()
+});
+
+// Queries do not require a signer or arweave
+const { 
+  getProfileById, 
+  getProfileByWalletAddress, 
+  getRegistryProfiles 
+} = AOProfile.init({
+	ao,
 	logging: true,
 });
 ```

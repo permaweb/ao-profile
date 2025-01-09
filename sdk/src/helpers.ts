@@ -283,7 +283,8 @@ export async function createTransaction(args: {
 export function resolveTransactionWith(deps: { arweave: any }) {
   return async (data: any): Promise<string> => {
     if(!data) return '';
-    if (checkValidAddress(data)) return data;
+    if (checkValidAddress(data)) { return data }
+    else if(!deps.arweave) { throw new Error(`Must initialize with Arweave in order to upload data`) }
     else {
       try {
         return await createTransaction({ data: data, arweave: deps.arweave });

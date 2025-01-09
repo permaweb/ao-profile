@@ -8,7 +8,7 @@ if (!globalThis.Buffer) globalThis.Buffer = Buffer;
 
 function createProfileWith(deps: { 
   ao: any,
-  signer: any,
+  signer?: any,
   arweaveUrl: string,
   graphqlUrl: string,
   logging?: boolean,
@@ -16,6 +16,7 @@ function createProfileWith(deps: {
 }) : (args: CreateProfileArgs) => Promise<string> {
   return async (args: CreateProfileArgs): Promise<string> => {
     try {
+      if(!deps.signer) throw new Error(`Must initialize with a signer to create profiles`);
       let profileSrc = args.profileSrc ? args.profileSrc : AO.profileSrc;
       const processSrcFetch = await fetch(`${deps.arweaveUrl}/${profileSrc}`);
   
@@ -118,6 +119,7 @@ function updateProfileWith(deps: {
   resolveTransaction: any
  }): (args: EditProfileArgs) => Promise<string> {
   return async (args: EditProfileArgs): Promise<string> => {
+    if(!deps.signer) throw new Error(`Must initialize with a signer to update profiles`);
     if(deps.logging) console.log(`Updating Profile ${args.profileId}`);
 
     const { thumbnail, banner, ...newObj } = args.data;
@@ -140,10 +142,10 @@ function updateProfileWith(deps: {
   }
 }
 
-export const initAOProfile = (deps: { 
+const init = (deps: { 
   ao: any,
-  signer: any,
-  arweave: any,
+  signer?: any,
+  arweave?: any,
   profileSrc?: string,
   arweaveUrl?: string,
   graphqlUrl?: string,
@@ -173,6 +175,10 @@ export const initAOProfile = (deps: {
     getProfileByWalletAddress: getByWalletWith({ ao: deps.ao, registry: deps.registry }),
     getRegistryProfiles: getRegistryProfilesWith({ ao: deps.ao, registry: deps.registry })
   }
+};
+
+export default {
+  init
 };
 
 export * from './types';
