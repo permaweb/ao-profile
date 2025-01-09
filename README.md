@@ -30,28 +30,15 @@ import AOProfile from '@permaweb/aoprofile';
 const ao = connect();
 const signer = createDataItemSigner(window.arweaveWallet);
 
-// Note: arweave is only required for uploading files via data urls, not if 
+// Note: arweave is only required for uploading files via data urls, not if
 // sending txid's as the images to createProfile and updateProfile,
 // signer is required for all uses of createProfile and updateProfile
-const { 
-  createProfile, 
-  updateProfile,
-  getProfileById, 
-  getProfileByWalletAddress, 
-  getRegistryProfiles
-} = AOProfile.init({
-	ao,
-	signer,
-	logging: true,
-  arweave: Arweave.init()
-});
+const { createProfile, updateProfile, getProfileById, getProfileByWalletAddress, getRegistryProfiles } = AOProfile.init(
+	{ ao, signer, arweave: Arweave.init({}) }
+);
 
 // Queries do not require a signer or arweave
-const { 
-  getProfileById, 
-  getProfileByWalletAddress, 
-  getRegistryProfiles 
-} = AOProfile.init({
+const { getProfileById, getProfileByWalletAddress, getRegistryProfiles } = AOProfile.init({
 	ao,
 	logging: true,
 });
@@ -214,14 +201,14 @@ const profiles = await getRegistryProfiles({ profileIds: [ids] });
 
 ```typescript
 [
-  {
-    id: 'ProfileProcessId',
-    username: 'Sample username',
-    thumbnail: 'ThumbnailTxId',
-    description: 'Sample description',
-    lastUpdate: '1736293783295'
-  }
-]
+	{
+		id: 'ProfileProcessId',
+		username: 'Sample username',
+		thumbnail: 'ThumbnailTxId',
+		description: 'Sample description',
+		lastUpdate: '1736293783295',
+	},
+];
 ```
 
 </details>

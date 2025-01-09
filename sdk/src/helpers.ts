@@ -1,13 +1,13 @@
-// we are not using this import it is so that
+// We are not using this import it is so that
 // the global.window.arweaveWallet code compiles
 import Arweave from 'arweave';
 
-import { 
-  GQLArgsType, 
-  GQLNodeResponseType, 
-  DefaultGQLResponseType, 
-  QueryBodyGQLArgsType,
-  TagType
+import {
+	GQLArgsType,
+	GQLNodeResponseType,
+	DefaultGQLResponseType,
+	QueryBodyGQLArgsType,
+	TagType
 } from './types';
 import { PAGINATORS, CURSORS, GATEWAYS, TAGS, UPLOAD } from './config';
 
@@ -22,9 +22,9 @@ function getQueryBody(args: QueryBodyGQLArgsType): string {
 	const blockFilterStr = blockFilter ? JSON.stringify(blockFilter).replace(/"([^"]+)":/g, '$1:') : null;
 	const tagFilters = args.tagFilters
 		? JSON.stringify(args.tagFilters)
-				.replace(/"(name)":/g, '$1:')
-				.replace(/"(values)":/g, '$1:')
-				.replace(/"FUZZY_OR"/g, 'FUZZY_OR')
+			.replace(/"(name)":/g, '$1:')
+			.replace(/"(values)":/g, '$1:')
+			.replace(/"FUZZY_OR"/g, 'FUZZY_OR')
 		: null;
 	const owners = args.owners ? JSON.stringify(args.owners) : null;
 	const cursor = args.cursor && args.cursor !== CURSORS.end ? `"${args.cursor}"` : null;
@@ -94,42 +94,42 @@ function getQuery(body: string): string {
 }
 
 export async function getGQLData(args: GQLArgsType): Promise<DefaultGQLResponseType> {
-  const paginator = args.paginator ? args.paginator : PAGINATORS.default;
+	const paginator = args.paginator ? args.paginator : PAGINATORS.default;
 
-  let data: GQLNodeResponseType[] = [];
-  let count: number = 0;
-  let nextCursor: string | null = null;
+	let data: GQLNodeResponseType[] = [];
+	let count: number = 0;
+	let nextCursor: string | null = null;
 
-  if (args.ids && !args.ids.length) {
-    return { data: data, count: count, nextCursor: nextCursor, previousCursor: null };
-  }
+	if (args.ids && !args.ids.length) {
+		return { data: data, count: count, nextCursor: nextCursor, previousCursor: null };
+	}
 
-  try {
-    let queryBody: string = getQueryBody(args);
-    const response = await getResponse({ gateway: args.gateway, query: getQuery(queryBody) });
+	try {
+		let queryBody: string = getQueryBody(args);
+		const response = await getResponse({ gateway: args.gateway, query: getQuery(queryBody) });
 
-    if (response.data.transactions.edges.length) {
-      data = [...response.data.transactions.edges];
-      count = response.data.transactions.count ?? 0;
+		if (response.data.transactions.edges.length) {
+			data = [...response.data.transactions.edges];
+			count = response.data.transactions.count ?? 0;
 
-      const lastResults: boolean = data.length < paginator || !response.data.transactions.pageInfo.hasNextPage;
+			const lastResults: boolean = data.length < paginator || !response.data.transactions.pageInfo.hasNextPage;
 
-      if (lastResults) nextCursor = CURSORS.end;
-      else nextCursor = data[data.length - 1].cursor;
+			if (lastResults) nextCursor = CURSORS.end;
+			else nextCursor = data[data.length - 1].cursor;
 
-      return {
-        data: data,
-        count: count,
-        nextCursor: nextCursor,
-        previousCursor: null,
-      };
-    } else {
-      return { data: data, count: count, nextCursor: nextCursor, previousCursor: null };
-    }
-  } catch (e: any) {
-    console.error(e);
-    return { data: data, count: count, nextCursor: nextCursor, previousCursor: null };
-  }
+			return {
+				data: data,
+				count: count,
+				nextCursor: nextCursor,
+				previousCursor: null,
+			};
+		} else {
+			return { data: data, count: count, nextCursor: nextCursor, previousCursor: null };
+		}
+	} catch (e: any) {
+		console.error(e);
+		return { data: data, count: count, nextCursor: nextCursor, previousCursor: null };
+	}
 }
 
 export function getTagValue(list: { [key: string]: any }[], name: string): string | null {
@@ -148,8 +148,8 @@ export async function messageResult(args: {
 	action: string;
 	tags: TagType[] | null;
 	data: string;
-  ao: any;
-  signer: any;
+	ao: any;
+	signer: any;
 }): Promise<any> {
 	try {
 		const tags = [{ name: 'Action', value: args.action }];
@@ -202,12 +202,12 @@ export async function messageResult(args: {
 }
 
 export function uppercaseKeys(obj: any) {
-  return Object.fromEntries(
-      Object.entries(obj).map(([key, value]) => [
-          key.charAt(0).toUpperCase() + key.slice(1),
-          value
-      ])
-  );
+	return Object.fromEntries(
+		Object.entries(obj).map(([key, value]) => [
+			key.charAt(0).toUpperCase() + key.slice(1),
+			value
+		])
+	);
 }
 
 export function checkValidAddress(address: string | null) {
@@ -239,7 +239,7 @@ export function getByteSize(input: string | Buffer): number {
 
 export async function createTransaction(args: {
 	data: any;
-  arweave: any;
+	arweave: any;
 	tags?: TagType[];
 	uploadMethod?: 'default' | 'turbo';
 }): Promise<string> {
@@ -264,12 +264,12 @@ export async function createTransaction(args: {
 			tx.addTag(TAGS.keys.contentType, contentType)
 			if (args.tags && args.tags.length > 0) args.tags.forEach((tag: TagType) => tx.addTag(tag.name, tag.value));
 
-      if(global.window && global.window.arweaveWallet) {
-        const response = await global.window.arweaveWallet.dispatch(tx);
-        return response.id;
-      }
+			if (global.window && global.window.arweaveWallet) {
+				const response = await global.window.arweaveWallet.dispatch(tx);
+				return response.id;
+			}
 
-      return '';
+			return '';
 		}
 		else {
 			throw new Error('Data exceeds max upload limit'); // TODO
@@ -281,16 +281,16 @@ export async function createTransaction(args: {
 }
 
 export function resolveTransactionWith(deps: { arweave: any }) {
-  return async (data: any): Promise<string> => {
-    if(!data) return '';
-    if (checkValidAddress(data)) { return data }
-    else if(!deps.arweave) { throw new Error(`Must initialize with Arweave in order to upload data`) }
-    else {
-      try {
-        return await createTransaction({ data: data, arweave: deps.arweave });
-      } catch (e: any) {
-        throw new Error(e.message ?? 'Error resolving transaction');
-      }
-    }
-  }
+	return async (data: any): Promise<string> => {
+		if (!data) return '';
+		if (checkValidAddress(data)) { return data }
+		else if (!deps.arweave) { throw new Error(`Must initialize with Arweave in order to upload data`) }
+		else {
+			try {
+				return await createTransaction({ data: data, arweave: deps.arweave });
+			} catch (e: any) {
+				throw new Error(e.message ?? 'Error resolving transaction');
+			}
+		}
+	}
 }
