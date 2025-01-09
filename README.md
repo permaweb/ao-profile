@@ -1,6 +1,6 @@
 # @permaweb/aoprofile
 
-This SDK provides a set of libraries to interact with profile processes on AO. Profiles are a digital representation of entities, such as users, organizations, or channels. These processes include specific metadata that describes the entity and can be associated with various digital assets and collections. Profiles are created, updated, and fetched using the following functions.
+This SDK provides a set of functions to interact with profile processes on AO. Profiles are a digital representation of entities, such as users, organizations, or channels. These processes include specific metadata that describes the entity and can be associated with various digital assets and collections. Profiles are created, updated, and fetched using the following functions.
 
 ## Prerequisites
 
@@ -40,15 +40,15 @@ const { createProfile, updateProfile, getProfileById, getProfileByWalletAddress,
 
 #### `createProfile`
 
-Creates a profile, initializing a zone with specific profile relevant metadata.
+Creates a profile, initializing a zone with specific profile relevant metadata. Note: using data urls for images will not work in NodeJS they will only work in a browser.
 
 ```typescript
 const profileId = await createProfile({
-	username: 'Sample username',
+	userName: 'Sample username',
 	displayName: 'Sample display name',
 	description: 'Sample description',
-	thumbnail: 'Profile image data',
-	banner: 'Cover image data',
+	thumbnail: 'Profile image data (can be a browser data url like data: or an Arweave txid)',
+	banner: 'Cover image data (can be a browser data url like data: or an Arweave txid)',
 });
 ```
 
@@ -75,10 +75,10 @@ Updates a profile by modifying its metadata, such as `username`, `displayName`, 
 ```typescript
 const profileUpdateId = await updateProfile({
 	profileId: profileId,
-	username: 'Sample Zone',
+	userName: 'Sample Zone',
 	displayName: 'Sample Zone',
-	description: 'Sample description',
-	thumbnail: 'Profile image data',
+	description: 'Sample description (can be a browser data url like data: or an Arweave txid)',
+	thumbnail: 'Profile image data (can be a browser data url like data: or an Arweave txid)',
 	banner: 'Cover image data',
 });
 ```

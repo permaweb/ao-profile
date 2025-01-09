@@ -14,3 +14,16 @@ export declare function messageResult(args: {
 export declare function uppercaseKeys(obj: any): {
     [k: string]: unknown;
 };
+export declare function checkValidAddress(address: string | null): boolean;
+export declare function getBase64Data(dataURL: string): string;
+export declare function getDataURLContentType(dataURL: string): string | null;
+export declare function getByteSize(input: string | Buffer): number;
+export declare function createTransaction(args: {
+    data: any;
+    arweave: any;
+    tags?: TagType[];
+    uploadMethod?: 'default' | 'turbo';
+}): Promise<string>;
+export declare function resolveTransactionWith(deps: {
+    arweave: any;
+}): (data: any) => Promise<string>;

@@ -1,6 +1,6 @@
 {
 	"name": "@permaweb/aoprofile",
-	"version": "0.0.6",
+	"version": "0.0.7",
 	"type": "module",
 	"main": "./dist/index.cjs",
 	"module": "./dist/index.js",
@@ -42,6 +42,8 @@
 		"build": "node build.js"
 	},
 	"dependencies": {
+		"arweave": "^1.15.5",
+    "buffer": "^6.0.3",
 		"process": "^0.11.10",
 		"tsc-alias": "^1.8.10"
 	},

@@ -1,3 +1,6 @@
+// we are not using this import it is so that
+// the global.window.arweaveWallet code compiles
+import Arweave from 'arweave';
 
 import { 
   GQLArgsType, 
@@ -6,7 +9,7 @@ import {
   QueryBodyGQLArgsType,
   TagType
 } from './types';
-import { PAGINATORS, CURSORS, GATEWAYS } from './config';
+import { PAGINATORS, CURSORS, GATEWAYS, TAGS, UPLOAD } from './config';
 
 function getQueryBody(args: QueryBodyGQLArgsType): string {
 	const paginator = args.paginator ? args.paginator : PAGINATORS.default;
@@ -205,4 +208,88 @@ export function uppercaseKeys(obj: any) {
           value
       ])
   );
+}
+
+export function checkValidAddress(address: string | null) {
+	if (!address) return false;
+	return /^[a-z0-9_-]{43}$/i.test(address);
+}
+
+export function getBase64Data(dataURL: string) {
+	return dataURL.split(',')[1];
+}
+
+export function getDataURLContentType(dataURL: string) {
+	const result = dataURL.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,/);
+	return result ? result[1] : null;
+}
+
+export function getByteSize(input: string | Buffer): number {
+	let sizeInBytes: number;
+	if (Buffer.isBuffer(input)) {
+		sizeInBytes = input.length;
+	} else if (typeof input === 'string') {
+		sizeInBytes = Buffer.byteLength(input, 'utf-8');
+	} else {
+		throw new Error('Input must be a string or a Buffer');
+	}
+
+	return sizeInBytes;
+}
+
+export async function createTransaction(args: {
+	data: any;
+  arweave: any;
+	tags?: TagType[];
+	uploadMethod?: 'default' | 'turbo';
+}): Promise<string> {
+	let content: any = null;
+	let contentType: string | null = null;
+
+	try {
+		if (typeof args.data === 'string' && args.data.startsWith('data:')) {
+			content = Buffer.from(getBase64Data(args.data), 'base64');
+			contentType = getDataURLContentType(args.data);
+		}
+	}
+	catch (e: any) {
+		throw new Error(e);
+	}
+
+	if (content && contentType) {
+		const contentSize: number = getByteSize(content);
+
+		if (contentSize < Number(UPLOAD.dispatchUploadSize)) {
+			const tx = await args.arweave.createTransaction({ data: content }, 'use_wallet');
+			tx.addTag(TAGS.keys.contentType, contentType)
+			if (args.tags && args.tags.length > 0) args.tags.forEach((tag: TagType) => tx.addTag(tag.name, tag.value));
+
+      if(global.window && global.window.arweaveWallet) {
+        const response = await global.window.arweaveWallet.dispatch(tx);
+        return response.id;
+      }
+
+      return '';
+		}
+		else {
+			throw new Error('Data exceeds max upload limit'); // TODO
+		}
+	}
+	else {
+		throw new Error('Error preparing transaction data');
+	}
+}
+
+export function resolveTransactionWith(deps: { arweave: any }) {
+  return async (data: any): Promise<string> => {
+    if(!data) return '';
+    if (checkValidAddress(data)) return data;
+    else {
+      try {
+        return await createTransaction({ data: data, arweave: deps.arweave });
+      } catch (e: any) {
+        throw new Error(e.message ?? 'Error resolving transaction');
+      }
+    }
+  }
 }

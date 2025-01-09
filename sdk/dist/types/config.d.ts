@@ -25,3 +25,15 @@ export declare const CURSORS: {
     p1: string;
     end: string;
 };
+export declare const TAGS: {
+    keys: {
+        contentType: string;
+    };
+};
+export declare const UPLOAD: {
+    node1: string;
+    node2: string;
+    batchSize: number;
+    chunkSize: number;
+    dispatchUploadSize: number;
+};

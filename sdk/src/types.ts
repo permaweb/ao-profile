@@ -62,8 +62,8 @@ export type EditProfileArgs = {
 export type ProfileInput = {
   userName: string,
   displayName?: string,
-	thumbnail?: string,
-  banner?: string,
+	thumbnail?: any,
+  banner?: any,
   description?: string
 }
 

@@ -1,69 +1,206 @@
-# AO Profile
+# @permaweb/aoprofile
 
-This library is for creating, updating, and querying the current profile implementation running on AO.
+This SDK provides a set of functions to interact with profile processes on AO. Profiles are a digital representation of entities, such as users, organizations, or channels. These processes include specific metadata that describes the entity and can be associated with various digital assets and collections. Profiles are created, updated, and fetched using the following functions.
 
-## SDK 
+## Prerequisites
 
-Initializing the library
+- `node >= v18.0`
+- `npm` or `yarn`
+- `@permaweb/aoconnect`
 
-```js
-import { readFileSync } from 'fs';
+## Installation
+
+```bash
+npm install @permaweb/aoprofile
+```
+
+or
+
+```bash
+yarn add @permaweb/aoprofile
+```
+
+## Initialization
+
+```typescript
 import { connect, createDataItemSigner } from '@permaweb/aoconnect';
-import { init } from '@permaweb/aoprofile';
+import { initAOProfile } from '@permaweb/aoprofile';
 
 const ao = connect();
-const wallet = JSON.parse(readFileSync(process.env.PATH_TO_WALLET, 'utf-8'));
-const signer = createDataItemSigner(wallet);
-const { 
-  create, 
-  update, 
-  getById, 
-  getByWallet, 
-  getRegistryProfiles 
-} = init({ ao, signer, logging: true });
+const signer = createDataItemSigner(window.arweaveWallet);
 
-// there other optional parameters to init:
-// profileSrc, arweaveUrl, graphqlUrl, and registry (the id of the profile registry)
-
+const { createProfile, updateProfile, getProfileById, getProfileByWalletAddress, getRegistryProfiles } = init({
+	ao,
+	signer,
+	logging: true,
+});
 ```
 
-Creating and Editing Profiles, use the functions initialized above.
-```js
-const data = {
-  userName: "Test User Name",
-  displayName: "Test Display Name",
-  coverImage: "3LtGcZeZwAvbbjUZeUK0DhcRRHeN4KvJ4FlHNPt0gc8",
-  profileImage: "3LtGcZeZwAvbbjUZeUK0DhcRRHeN4KvJ4FlHNPt0gc8",
-  description: "test profile"
+## Usage
+
+#### `createProfile`
+
+Creates a profile, initializing a zone with specific profile relevant metadata. Note: using data urls for images will not work in NodeJS they will only work in a browser.
+
+```typescript
+const profileId = await createProfile({
+	userName: 'Sample username',
+	displayName: 'Sample display name',
+	description: 'Sample description',
+	thumbnail: 'Profile image data (can be a browser data url like data: or an Arweave txid)',
+	banner: 'Cover image data (can be a browser data url like data: or an Arweave txid)',
+});
+```
+
+<details>
+  <summary><strong>Parameters</strong></summary>
+
+- `args`: Object containing profile details, including `username`, `displayName`, `description`, `thumbnail`, and `banner`
+
+</details>
+
+<details>
+  <summary><strong>Response</strong></summary>
+
+```typescript
+string | null; // Profile ID or null if creation fails
+```
+
+</details>
+
+#### `updateProfile`
+
+Updates a profile by modifying its metadata, such as `username`, `displayName`, `description`, and optional image fields like `thumbnail` and `banner`.
+
+```typescript
+const profileUpdateId = await updateProfile({
+	profileId: profileId,
+	userName: 'Sample Zone',
+	displayName: 'Sample Zone',
+	description: 'Sample description (can be a browser data url like data: or an Arweave txid)',
+	thumbnail: 'Profile image data (can be a browser data url like data: or an Arweave txid)',
+	banner: 'Cover image data',
+});
+```
+
+<details>
+  <summary><strong>Parameters</strong></summary>
+
+- `args`: The correspending Profile ID, as well as the details to update, structured similarly to `createProfile`
+
+</details>
+
+<details>
+  <summary><strong>Response</strong></summary>
+
+```typescript
+string | null; // Profile update ID or null if update fails
+```
+
+</details>
+
+#### `getProfileById`
+
+Fetches a profile based on its ID. Returns a structured profile object containing the profile’s metadata, assets, and other properties associated with the profile.
+
+```typescript
+const profile = await getProfileById({ profileId });
+```
+
+<details>
+  <summary><strong>Parameters</strong></summary>
+
+- `args`: Object containing the ID to fetch specified by `profileId`
+
+</details>
+
+<details>
+  <summary><strong>Response</strong></summary>
+
+```typescript
+{
+  id: "ProfileProcessId",
+  walletAddress: "WalletAddress",
+	displayName: "Sample display name",
+  username: "Sample username",
+  description: "Sample description",
+  thumbnail: "ThumbnailTxId",
+  banner: "BannerTxId",
+  assets: [
+    "AssetProcessId1",
+    "AssetProcessId2",
+    "AssetProcessId3",
+  ]
 }
-
-const profileId = await create({
-  data
-});
-
-data.displayName = "Test Display Name Update";
-
-const updateTx = await update({
-  profileId,
-  data
-});
 ```
 
-Querying Profiles and the Profile Registry, use the functions initialized above.
+</details>
 
-```js
-const profileResponse = await getById({ profileId });
+#### `getProfileByWalletAddress`
 
-console.log(`Profile by id response`);
-console.log(profileResponse);
+Fetches a profile using the wallet address associated with it. This function is useful for retrieving a profile when only the wallet address is known.
 
-const byWalletResponse = await getByWallet({ address: profileResponse.walletAddress });
-
-console.log(`Profile by wallet response`);
-console.log(byWalletResponse);
-
-const registryProfiles = await getRegistryProfiles({ profileIds: [profileId] });
-
-console.log(`Registry Profiles response`)
-console.log(registryProfiles)
+```typescript
+const profile = await getProfileByWalletAddress({ address: walletAddress });
 ```
+
+<details>
+  <summary><strong>Parameters</strong></summary>
+
+- `args`: Object containing the wallet address to fetch specified by `address`
+
+</details>
+
+<details>
+  <summary><strong>Response</strong></summary>
+
+```typescript
+{
+  id: "ProfileProcessId",
+  walletAddress: "WalletAddress",
+	displayName: "Sample display name",
+  username: "Sample username",
+  description: "Sample description",
+  thumbnail: "ThumbnailTxId",
+  banner: "BannerTxId",
+  assets: [
+    "AssetProcessId1",
+    "AssetProcessId2",
+    "AssetProcessId3",
+  ]
+}
+```
+
+</details>
+
+#### `getRegistryProfiles`
+
+This function queries a profile registry process that contains information on all spawned AO profiles.
+
+```typescript
+const profiles = await getRegistryProfiles({ profileIds: [ids] });
+```
+
+<details>
+  <summary><strong>Parameters</strong></summary>
+
+- `args`: Object containing the ids to fetch specified by `profileIds`
+
+</details>
+
+<details>
+  <summary><strong>Response</strong></summary>
+
+```typescript
+[
+  {
+    id: 'ProfileProcessId',
+    username: 'Sample username',
+    thumbnail: 'ThumbnailTxId',
+    description: 'Sample description',
+    lastUpdate: '1736293783295'
+  }
+]
+```
+
+</details>

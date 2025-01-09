@@ -1,19 +1,20 @@
 import { CreateProfileArgs, EditProfileArgs } from './types';
-export declare const init: (deps: {
+export declare const initAOProfile: (deps: {
     ao: any;
     signer: any;
+    arweave: any;
     profileSrc?: string;
     arweaveUrl?: string;
     graphqlUrl?: string;
     logging?: boolean;
     registry?: string;
 }) => {
-    create: (args: CreateProfileArgs) => Promise<string>;
-    update: (args: EditProfileArgs) => Promise<string>;
-    getById: (args: {
+    createProfile: (args: CreateProfileArgs) => Promise<string>;
+    updateProfile: (args: EditProfileArgs) => Promise<string>;
+    getProfileById: (args: {
         profileId: string;
     }) => Promise<import("./types").ProfileType | null>;
-    getByWallet: (args: {
+    getProfileByWalletAddress: (args: {
         address: string;
     }) => Promise<import("./types").ProfileType | null>;
     getRegistryProfiles: (args: {
