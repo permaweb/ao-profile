@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs';
 import { connect, createDataItemSigner } from '@permaweb/aoconnect';
-import AOProfile from '@permaweb/ao-profile';
+import AOProfile from '@permaweb/aoprofile';
 import Arweave from 'arweave';
 
 const ao = connect();
