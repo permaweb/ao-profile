@@ -1,4 +1,4 @@
-import { ProfileType, TagType, RegistryProfileType } from "types";
+import { ProfileType, TagType, RegistryProfileType } from 'types';
 export declare function readHandler(args: {
     ao: any;
     processId: string;
