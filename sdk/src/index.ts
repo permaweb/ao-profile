@@ -50,31 +50,6 @@ function createProfileWith(deps: {
 
 			if (deps.logging) console.log(`Process Id -`, processId);
 
-			if (deps.logging) console.log('Fetching profile process...');
-			let fetchedAssetId: string | null = null;
-			let retryCount: number = 0;
-			while (!fetchedAssetId) {
-				await new Promise((r) => setTimeout(r, 2000));
-				const gqlResponse = await getGQLData({
-					gateway: deps.graphqlUrl,
-					ids: [processId],
-					tagFilters: null,
-					owners: null,
-					cursor: null,
-				});
-
-				if (gqlResponse && gqlResponse.data.length) {
-					if (deps.logging) console.log(`Fetched transaction -`, gqlResponse.data[0].node.id);
-					fetchedAssetId = gqlResponse.data[0].node.id;
-				} else {
-					if (deps.logging) console.log(`Transaction not found -`, processId);
-					retryCount++;
-					if (retryCount >= 200) {
-						throw new Error(`Profile not found, please try again`);
-					}
-				}
-			}
-
 			if (deps.logging) console.log('Sending source eval...');
 			const evalMessage = await deps.ao.message({
 				process: processId,
